@@ -1,0 +1,44 @@
+{
+    "suspicious_ips": [
+        "192.168.14.128"
+    ],
+    "suspicious_urls": [
+        "/9c160cdb-843e-49e6-92d4-c5342c898e28",
+        "/HNAP1",
+        "/admin",
+        "/admin-test-olmayan",
+        "/backup",
+        "/be8e9ecb-bb56-45dc-9c76-c4afea39d894",
+        "/bulunmayan-sayfa-1",
+        "/bulunmayan-sayfa-2",
+        "/dvwa/login.php",
+        "/evox/about",
+        "/login",
+        "/nmaplowercheck1788158306",
+        "/phpMyAdmin",
+        "/phpMyAdmin/",
+        "/phpMyAdmin/favicon.ico",
+        "/phpMyAdmin/phpmyadmin.css.php?lang=en-utf-8&convcharset=utf-8&token=c725530191df82a6724e433a37dfd4fd&js_frame=right&nocache=2457687151",
+        "/phpMyAdmin/print.css",
+        "/phpMyAdmin/themes/original/img/logo_right.png",
+        "/phpMyAdmin/themes/original/img/s_warn.png",
+        "/sdk",
+        "/secret",
+        "/webdav"
+    ],
+    "status_codes": [
+        404
+    ],
+    "alerts": {
+        "high_request_frequency": [
+            {
+                "ip": "192.168.14.128",
+                "requests": 20,
+                "window_seconds": 10,
+                "status": "WARNING",
+                "reason": "High request frequency"
+            }
+        ],
+        "brute_force": []
+    }
+}

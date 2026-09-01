@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Security Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .card h2 {
+            margin: 0;
+            font-size: 30px;
+        }
+
+        .section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #f0f0f0;
+        }
+
+        .alert {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>WEB SECURITY DASHBOARD</h1>
+
+<div class="cards">
+
+    <div class="card">
+        <p>Total Requests</p>
+        <h2>{{ total_requests }}</h2>
+    </div>
+
+    <div class="card">
+        <p>Unique IPs</p>
+        <h2>{{ unique_ips }}</h2>
+    </div>
+
+    <div class="card">
+        <p>Suspicious IPs</p>
+        <h2>{{ suspicious_ip_count }}</h2>
+    </div>
+
+    <div class="card">
+        <p>Alerts</p>
+        <h2>{{ alert_count }}</h2>
+    </div>
+
+</div>
+
+<div class="section">
+
+    <h2>Top Source IPs</h2>
+
+    <table>
+        <tr>
+            <th>IP Address</th>
+            <th>Requests</th>
+        </tr>
+
+        {% for ip, count in top_ips %}
+        <tr>
+            <td>{{ ip }}</td>
+            <td>{{ count }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+</div>
+
+<div class="section">
+
+    <h2>HTTP Status Codes</h2>
+
+    <table>
+        <tr>
+            <th>Status Code</th>
+            <th>Count</th>
+        </tr>
+
+        {% for code, count in status_counts.items() %}
+        <tr>
+            <td>{{ code }}</td>
+            <td>{{ count }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+</div>
+
+<div class="section">
+
+    <h2>Security Alerts</h2>
+
+    {% if alerts %}
+
+    <table>
+        <tr>
+            <th>Source IP</th>
+            <th>Reason</th>
+        </tr>
+
+        {% for alert in alerts %}
+        <tr>
+            <td>{{ alert["ip"] }}</td>
+            <td class="alert">{{ alert["reason"] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    {% else %}
+
+    <p>No security alerts detected.</p>
+
+    {% endif %}
+
+</div>
+
+</body>
+</html>
