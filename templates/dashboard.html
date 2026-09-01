@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Web Security Dashboard</title>
+    <title>Web Güvenlik Paneli</title>
 
     <style>
         body {
@@ -68,27 +68,27 @@
 
 <body>
 
-<h1>WEB SECURITY DASHBOARD</h1>
+<h1>WEB GÜVENLİK PANELİ</h1>
 
 <div class="cards">
 
     <div class="card">
-        <p>Total Requests</p>
+        <p>Toplam İstek</p>
         <h2>{{ total_requests }}</h2>
     </div>
 
     <div class="card">
-        <p>Unique IPs</p>
+        <p>Benzersiz IP</p>
         <h2>{{ unique_ips }}</h2>
     </div>
 
     <div class="card">
-        <p>Suspicious IPs</p>
+        <p>Şüpheli IP</p>
         <h2>{{ suspicious_ip_count }}</h2>
     </div>
 
     <div class="card">
-        <p>Alerts</p>
+        <p>Alarm Sayısı</p>
         <h2>{{ alert_count }}</h2>
     </div>
 
@@ -96,12 +96,12 @@
 
 <div class="section">
 
-    <h2>Top Source IPs</h2>
+    <h2>En Aktif Kaynak IP Adresleri</h2>
 
     <table>
         <tr>
-            <th>IP Address</th>
-            <th>Requests</th>
+            <th>IP Adresi</th>
+            <th>İstek Sayısı</th>
         </tr>
 
         {% for ip, count in top_ips %}
@@ -116,12 +116,12 @@
 
 <div class="section">
 
-    <h2>HTTP Status Codes</h2>
+    <h2>HTTP Durum Kodları</h2>
 
     <table>
         <tr>
-            <th>Status Code</th>
-            <th>Count</th>
+            <th>Durum Kodu</th>
+            <th>Adet</th>
         </tr>
 
         {% for code, count in status_counts.items() %}
@@ -136,14 +136,14 @@
 
 <div class="section">
 
-    <h2>Security Alerts</h2>
+    <h2>Güvenlik Alarmları</h2>
 
     {% if alerts %}
 
     <table>
         <tr>
-            <th>Source IP</th>
-            <th>Reason</th>
+            <th>Kaynak IP</th>
+            <th>Neden</th>
         </tr>
 
         {% for alert in alerts %}
@@ -156,7 +156,7 @@
 
     {% else %}
 
-    <p>No security alerts detected.</p>
+    <p>Herhangi bir güvenlik alarmı tespit edilmedi.</p>
 
     {% endif %}
 
