@@ -1,4 +1,8 @@
-from flask import Flask, render_template
+import os
+import ipaddress
+
+from flask import Flask, render_template, request
+from werkzeug.utils import secure_filename
 
 from parser import parse_log_line
 from analyzer import analyze_logs
@@ -9,45 +13,85 @@ from detector import (
     detect_many_404,
 )
 
-# Flask web uygulamasını oluşturur
+
+# Flask uygulamasını oluşturur
 app = Flask(__name__)
 
-# Dashboard üzerinde analiz edilecek log dosyasının yolu
-LOG_FILE = "sample_logs/access.log"
+
+# ------------------------------------------------------------
+# DOSYA AYARLARI
+# ------------------------------------------------------------
+
+# Varsayılan olarak analiz edilecek log dosyası
+DEFAULT_LOG_FILE = "sample_logs/access.log"
+
+# Metasploitable üzerinden gelen gerçek zamanlı logların tutulduğu dosya
+LIVE_LOG_FILE = "sample_logs/live_access.log"
+
+# Dashboard üzerinden yüklenen log dosyalarının tutulacağı klasör
+UPLOAD_FOLDER = "uploads"
+
+# Kabul edilen dosya uzantıları
+ALLOWED_EXTENSIONS = {"log", "txt"}
+
+# Upload klasörü yoksa oluşturur
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Canlı log dosyası henüz oluşmadıysa boş olarak oluşturur
+if not os.path.exists(LIVE_LOG_FILE):
+    with open(LIVE_LOG_FILE, "w", encoding="utf-8"):
+        pass
 
 
-# Log dosyasını okuyup her satırı parser yardımıyla ayrıştırır
-def load_logs():
+# Şu anda genel log analizinde kullanılan aktif dosya
+CURRENT_LOG_FILE = DEFAULT_LOG_FILE
+CURRENT_LOG_NAME = "access.log"
+
+
+# ------------------------------------------------------------
+# YARDIMCI FONKSİYONLAR
+# ------------------------------------------------------------
+
+# Dosya uzantısının uygun olup olmadığını kontrol eder
+def allowed_file(filename):
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+    )
+
+
+# Belirtilen log dosyasını okuyup parser ile ayrıştırır
+def load_logs(filename):
     parsed_logs = []
 
-    with open(LOG_FILE, "r", encoding="utf-8", errors="ignore") as file:
+    # Dosya yoksa boş liste döndürür
+    if not os.path.exists(filename):
+        return parsed_logs
+
+    with open(
+        filename,
+        "r",
+        encoding="utf-8",
+        errors="ignore"
+    ) as file:
+
         for line in file:
             parsed = parse_log_line(line)
 
-            # Satır başarıyla ayrıştırıldıysa listeye ekler
             if parsed:
                 parsed_logs.append(parsed)
 
     return parsed_logs
 
 
-# Ana dashboard sayfasını oluşturur
-@app.route("/")
-def dashboard():
+# Verilen log kayıtları üzerinde tüm detection kurallarını çalıştırır
+def detect_all(parsed_logs):
 
-    # Log kayıtlarını yükler
-    parsed_logs = load_logs()
-
-    # Temel log istatistiklerini hesaplar
-    results = analyze_logs(parsed_logs)
-
-    # Detection kurallarını çalıştırır
     high_request_alerts = detect_high_request_frequency(parsed_logs)
     brute_force_alerts = detect_web_brute_force(parsed_logs)
     enumeration_alerts = detect_web_enumeration(parsed_logs)
     many_404_alerts = detect_many_404(parsed_logs)
 
-    # Tüm güvenlik alarmlarını tek listede birleştirir
     all_alerts = (
         high_request_alerts
         + brute_force_alerts
@@ -55,16 +99,117 @@ def dashboard():
         + many_404_alerts
     )
 
-    # Alarm üreten benzersiz IP adreslerini tutar
+    return all_alerts
+
+
+# ------------------------------------------------------------
+# IP ADRESİ ANALİZİ
+# ------------------------------------------------------------
+
+# Kullanıcının girdiği IP adresini seçili log üzerinde analiz eder
+def analyze_ip(parsed_logs, target_ip):
+
+    # Sadece girilen IP adresine ait log kayıtlarını seçer
+    ip_logs = [
+        log for log in parsed_logs
+        if log["ip"] == target_ip
+    ]
+
+    # IP log içerisinde bulunamazsa
+    if not ip_logs:
+        return {
+            "found": False,
+            "ip": target_ip
+        }
+
+    # IP'nin toplam istek sayısı
+    total_requests = len(ip_logs)
+
+    # 404 cevaplarının sayısı
+    count_404 = sum(
+        1 for log in ip_logs
+        if log["status"] == 404
+    )
+
+    # 403 cevaplarının sayısı
+    count_403 = sum(
+        1 for log in ip_logs
+        if log["status"] == 403
+    )
+
+    # POST isteklerinin sayısı
+    post_requests = sum(
+        1 for log in ip_logs
+        if log["method"] == "POST"
+    )
+
+    # Erişilen farklı URL sayısı
+    unique_urls = len(
+        set(log["url"] for log in ip_logs)
+    )
+
+    # Sadece bu IP'ye ait loglarda saldırı tespiti yapar
+    all_alerts = detect_all(ip_logs)
+
+    # Alarm varsa IP şüpheli kabul edilir
+    suspicious = bool(all_alerts)
+
+    # Varsayılan risk seviyesi
+    risk = "DÜŞÜK"
+
+    if suspicious:
+        risk = "ORTA"
+
+        # Herhangi bir yüksek riskli alarm varsa
+        # genel IP risk seviyesini YÜKSEK yapar
+        if any(
+            alert.get("risk") == "YÜKSEK"
+            for alert in all_alerts
+        ):
+            risk = "YÜKSEK"
+
+    return {
+        "found": True,
+        "ip": target_ip,
+        "total_requests": total_requests,
+        "404_count": count_404,
+        "403_count": count_403,
+        "post_requests": post_requests,
+        "unique_urls": unique_urls,
+        "suspicious": suspicious,
+        "risk": risk,
+        "alerts": all_alerts,
+    }
+
+
+# ------------------------------------------------------------
+# GENEL LOG ANALİZİ
+# ------------------------------------------------------------
+
+# Seçilen log dosyasını analiz edip dashboard'u oluşturur
+def analyze_and_render(
+    filename,
+    selected_file=None,
+    ip_result=None
+):
+
+    parsed_logs = load_logs(filename)
+
+    # Temel log istatistiklerini hesaplar
+    results = analyze_logs(parsed_logs)
+
+    # Tüm saldırı tespit kurallarını çalıştırır
+    all_alerts = detect_all(parsed_logs)
+
+    # Alarm oluşturan benzersiz IP adreslerini toplar
     suspicious_ips = set()
 
     for alert in all_alerts:
         suspicious_ips.add(alert["ip"])
 
-    # En fazla HTTP isteği gönderen ilk 5 IP adresini seçer
+    # En aktif ilk 5 IP adresini belirler
     top_ips = results["ip_counts"].most_common(5)
 
-    # Hesaplanan verileri dashboard.html dosyasına gönderir
     return render_template(
         "dashboard.html",
         total_requests=results["total_requests"],
@@ -74,9 +219,148 @@ def dashboard():
         top_ips=top_ips,
         status_counts=results["status_counts"],
         alerts=all_alerts,
+        selected_file=selected_file,
+        ip_result=ip_result,
     )
 
 
-# Bu dosya doğrudan çalıştırılırsa Flask web sunucusunu başlatır
+# ------------------------------------------------------------
+# ANA DASHBOARD
+# ------------------------------------------------------------
+
+@app.route("/")
+def dashboard():
+
+    return analyze_and_render(
+        CURRENT_LOG_FILE,
+        selected_file=CURRENT_LOG_NAME
+    )
+
+
+# ------------------------------------------------------------
+# LOG DOSYASI YÜKLEME
+# ------------------------------------------------------------
+
+@app.route("/upload", methods=["POST"])
+def upload_log():
+
+    global CURRENT_LOG_FILE
+    global CURRENT_LOG_NAME
+
+    if "log_file" not in request.files:
+        return "Log dosyası seçilmedi.", 400
+
+    file = request.files["log_file"]
+
+    if file.filename == "":
+        return "Log dosyası seçilmedi.", 400
+
+    if not allowed_file(file.filename):
+        return "Sadece .log veya .txt dosyaları yüklenebilir.", 400
+
+    # Dosya adını güvenli hale getirir
+    filename = secure_filename(file.filename)
+
+    file_path = os.path.join(
+        UPLOAD_FOLDER,
+        filename
+    )
+
+    # Dosyayı uploads klasörüne kaydeder
+    file.save(file_path)
+
+    # Seçilen logu genel analiz için aktif log yapar
+    CURRENT_LOG_FILE = file_path
+    CURRENT_LOG_NAME = filename
+
+    return analyze_and_render(
+        CURRENT_LOG_FILE,
+        selected_file=CURRENT_LOG_NAME
+    )
+
+
+# ------------------------------------------------------------
+# IP ANALİZ ROUTE'U
+# ------------------------------------------------------------
+
+@app.route("/analyze-ip", methods=["POST"])
+def analyze_ip_route():
+
+    target_ip = request.form.get(
+        "ip_address",
+        ""
+    ).strip()
+
+    # Girilen değerin geçerli bir IP adresi olup olmadığını kontrol eder
+    try:
+        ipaddress.ip_address(target_ip)
+
+    except ValueError:
+        return "Geçerli bir IP adresi giriniz.", 400
+
+    parsed_logs = load_logs(CURRENT_LOG_FILE)
+
+    ip_result = analyze_ip(
+        parsed_logs,
+        target_ip
+    )
+
+    return analyze_and_render(
+        CURRENT_LOG_FILE,
+        selected_file=CURRENT_LOG_NAME,
+        ip_result=ip_result
+    )
+
+
+# ------------------------------------------------------------
+# GERÇEK ZAMANLI CANLI İZLEME
+# ------------------------------------------------------------
+
+@app.route("/live")
+def live_monitor():
+
+    # ÖNEMLİ:
+    # Burada artık seçilmiş statik log değil,
+    # live_reader.py tarafından oluşturulan
+    # canlı log dosyası okunmaktadır.
+    parsed_logs = load_logs(LIVE_LOG_FILE)
+
+    # En son gelen 30 HTTP isteğini gösterir
+    latest_logs = parsed_logs[-30:]
+
+    # Canlı log üzerinde saldırı tespit kurallarını çalıştırır
+    all_alerts = detect_all(parsed_logs)
+
+    # Alarm oluşturan benzersiz IP adreslerini hesaplar
+    suspicious_ips = set()
+
+    for alert in all_alerts:
+        suspicious_ips.add(alert["ip"])
+
+    # Canlı log istatistiklerini hesaplar
+    live_results = analyze_logs(parsed_logs)
+
+    return render_template(
+        "live.html",
+
+        # Canlı son HTTP istekleri
+        latest_logs=latest_logs,
+
+        # Canlı güvenlik alarmları
+        alerts=all_alerts,
+
+        # Canlı log dosyasının adı
+        selected_file="live_access.log",
+
+        # Üst kartlarda kullanılacak canlı istatistikler
+        total_requests=live_results["total_requests"],
+        unique_ips=live_results["unique_ip_count"],
+        suspicious_ip_count=len(suspicious_ips),
+        alert_count=len(all_alerts),
+    )
+
+
+# UYGULAMAYI BAŞLAT
+
 if __name__ == "__main__":
     app.run(debug=True)

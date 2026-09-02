@@ -2,163 +2,577 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Güvenlik Paneli</title>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
             margin: 0;
-            padding: 30px;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #eef2f7;
+            color: #172033;
         }
 
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
+        .header {
+            background: #111827;
+            color: white;
+            padding: 28px 40px;
         }
 
-        .cards {
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header p {
+            margin: 8px 0 0;
+            color: #cbd5e1;
+        }
+
+        .container {
+            max-width: 1450px;
+            margin: 28px auto;
+            padding: 0 25px 40px;
+        }
+
+        .menu {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .menu a {
+            text-decoration: none;
+            background: white;
+            color: #1f2937;
+            padding: 12px 18px;
+            border-radius: 9px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .menu a:hover {
+            background: #dbeafe;
+        }
+
+        .menu .active {
+            background: #2563eb;
+            color: white;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 22px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.07);
+        }
+
+        .panel h2 {
+            margin-top: 0;
+        }
+
+        .description {
+            color: #64748b;
+            margin-bottom: 18px;
+        }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        input[type="file"],
+        input[type="text"] {
+            padding: 12px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            min-width: 300px;
+            background: white;
+        }
+
+        button {
+            background: #2563eb;
+            border: none;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .active-file {
+            margin-top: 16px;
+            background: #eff6ff;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+        }
+
+        .stats {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 30px;
+            gap: 18px;
+            margin-bottom: 22px;
         }
 
-        .card {
+        .stat-card {
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            text-align: center;
+            padding: 22px;
+            border-radius: 14px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.07);
         }
 
-        .card h2 {
+        .stat-card p {
             margin: 0;
-            font-size: 30px;
+            color: #64748b;
+            font-size: 14px;
         }
 
-        .section {
-            background: white;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        .stat-card h2 {
+            font-size: 34px;
+            margin: 8px 0 0;
+        }
+
+        .blue {
+            border-left: 5px solid #2563eb;
+        }
+
+        .green {
+            border-left: 5px solid #16a34a;
+        }
+
+        .orange {
+            border-left: 5px solid #f59e0b;
+        }
+
+        .red {
+            border-left: 5px solid #dc2626;
+        }
+
+        .ip-result-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .small-card {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 9px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .small-card span {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .small-card strong {
+            display: block;
+            margin-top: 6px;
+            font-size: 19px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 11px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .normal {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .high {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-            text-align: left;
+            margin-top: 16px;
         }
 
         th {
-            background: #f0f0f0;
+            background: #f1f5f9;
+            color: #334155;
         }
 
-        .alert {
-            font-weight: bold;
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: top;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        .empty {
+            padding: 14px;
+            background: #f8fafc;
+            border-radius: 8px;
+            color: #475569;
+        }
+
+        @media (max-width: 1000px) {
+            .stats,
+            .ip-result-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .two-columns {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .stats,
+            .ip-result-grid {
+                grid-template-columns: 1fr;
+            }
+
+            input[type="file"],
+            input[type="text"] {
+                min-width: 100%;
+            }
         }
     </style>
 </head>
 
 <body>
 
-<h1>WEB GÜVENLİK PANELİ</h1>
-
-<div class="cards">
-
-    <div class="card">
-        <p>Toplam İstek</p>
-        <h2>{{ total_requests }}</h2>
-    </div>
-
-    <div class="card">
-        <p>Benzersiz IP</p>
-        <h2>{{ unique_ips }}</h2>
-    </div>
-
-    <div class="card">
-        <p>Şüpheli IP</p>
-        <h2>{{ suspicious_ip_count }}</h2>
-    </div>
-
-    <div class="card">
-        <p>Alarm Sayısı</p>
-        <h2>{{ alert_count }}</h2>
-    </div>
-
+<div class="header">
+    <h1>WEB GÜVENLİK PANELİ</h1>
+    <p>Log Analizi • Saldırı Tespiti • IP Davranış Analizi</p>
 </div>
 
-<div class="section">
+<div class="container">
 
-    <h2>En Aktif Kaynak IP Adresleri</h2>
+    <div class="menu">
+        <a href="/" class="active">Genel Log Analizi</a>
+        <a href="#ip-analizi">IP Analizi</a>
+        <a href="/live">Canlı İzleme</a>
+    </div>
 
-    <table>
-        <tr>
-            <th>IP Adresi</th>
-            <th>İstek Sayısı</th>
-        </tr>
+    <div class="panel">
+        <h2>Log Dosyası Analizi</h2>
 
-        {% for ip, count in top_ips %}
-        <tr>
-            <td>{{ ip }}</td>
-            <td>{{ count }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+        <p class="description">
+            Analiz etmek istediğiniz Apache access.log veya uyumlu .log/.txt dosyasını seçiniz.
+        </p>
 
-</div>
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <div class="form-row">
 
-<div class="section">
+                <input
+                    type="file"
+                    name="log_file"
+                    accept=".log,.txt"
+                    required
+                >
 
-    <h2>HTTP Durum Kodları</h2>
+                <button type="submit">
+                    Log Dosyasını Analiz Et
+                </button>
 
-    <table>
-        <tr>
-            <th>Durum Kodu</th>
-            <th>Adet</th>
-        </tr>
+            </div>
+        </form>
 
-        {% for code, count in status_counts.items() %}
-        <tr>
-            <td>{{ code }}</td>
-            <td>{{ count }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+        {% if selected_file %}
+        <div class="active-file">
+            <strong>Aktif Log Dosyası:</strong>
+            {{ selected_file }}
+        </div>
+        {% endif %}
+    </div>
 
-</div>
+    <div class="stats">
 
-<div class="section">
+        <div class="stat-card blue">
+            <p>Toplam HTTP İsteği</p>
+            <h2>{{ total_requests }}</h2>
+        </div>
 
-    <h2>Güvenlik Alarmları</h2>
+        <div class="stat-card green">
+            <p>Benzersiz IP</p>
+            <h2>{{ unique_ips }}</h2>
+        </div>
 
-    {% if alerts %}
+        <div class="stat-card orange">
+            <p>Şüpheli IP</p>
+            <h2>{{ suspicious_ip_count }}</h2>
+        </div>
 
-    <table>
-        <tr>
-            <th>Kaynak IP</th>
-            <th>Neden</th>
-        </tr>
+        <div class="stat-card red">
+            <p>Güvenlik Alarmı</p>
+            <h2>{{ alert_count }}</h2>
+        </div>
 
-        {% for alert in alerts %}
-        <tr>
-            <td>{{ alert["ip"] }}</td>
-            <td class="alert">{{ alert["reason"] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+    </div>
 
-    {% else %}
+    <div class="panel" id="ip-analizi">
 
-    <p>Herhangi bir güvenlik alarmı tespit edilmedi.</p>
+        <h2>IP Adresi Analizi</h2>
+
+        <p class="description">
+            Seçili log dosyasında davranışlarını incelemek istediğiniz kaynak IP adresini giriniz.
+        </p>
+
+        <form action="/analyze-ip" method="POST">
+            <div class="form-row">
+
+                <input
+                    type="text"
+                    name="ip_address"
+                    placeholder="Örnek: 192.168.14.128"
+                    required
+                >
+
+                <button type="submit">
+                    IP'yi Analiz Et
+                </button>
+
+            </div>
+        </form>
+    </div>
+
+    {% if ip_result %}
+
+    <div class="panel">
+        <h2>IP Analiz Sonucu</h2>
+
+        {% if not ip_result["found"] %}
+
+        <div class="empty">
+            <strong>{{ ip_result["ip"] }}</strong>
+            adresine ait kayıt bulunamadı.
+        </div>
+
+        {% else %}
+
+        <div class="ip-result-grid">
+
+            <div class="small-card">
+                <span>IP Adresi</span>
+                <strong>{{ ip_result["ip"] }}</strong>
+            </div>
+
+            <div class="small-card">
+                <span>Toplam İstek</span>
+                <strong>{{ ip_result["total_requests"] }}</strong>
+            </div>
+
+            <div class="small-card">
+                <span>Farklı URL</span>
+                <strong>{{ ip_result["unique_urls"] }}</strong>
+            </div>
+
+            <div class="small-card">
+                <span>404 Sayısı</span>
+                <strong>{{ ip_result["404_count"] }}</strong>
+            </div>
+
+            <div class="small-card">
+                <span>403 Sayısı</span>
+                <strong>{{ ip_result["403_count"] }}</strong>
+            </div>
+
+            <div class="small-card">
+                <span>POST İstekleri</span>
+                <strong>{{ ip_result["post_requests"] }}</strong>
+            </div>
+
+            <div class="small-card">
+                <span>Durum</span>
+                <strong>
+
+                    {% if ip_result["suspicious"] %}
+
+                    <span class="badge high">
+                        ŞÜPHELİ
+                    </span>
+
+                    {% else %}
+
+                    <span class="badge normal">
+                        NORMAL
+                    </span>
+
+                    {% endif %}
+
+                </strong>
+            </div>
+
+            <div class="small-card">
+                <span>Risk Seviyesi</span>
+                <strong>
+
+                    {% if ip_result["risk"] == "YÜKSEK" %}
+
+                    <span class="badge high">
+                        YÜKSEK
+                    </span>
+
+                    {% elif ip_result["risk"] == "ORTA" %}
+
+                    <span class="badge medium">
+                        ORTA
+                    </span>
+
+                    {% else %}
+
+                    <span class="badge normal">
+                        DÜŞÜK
+                    </span>
+
+                    {% endif %}
+
+                </strong>
+            </div>
+
+        </div>
+
+        {% if ip_result["alerts"] %}
+
+        <h3>Tespit Edilen Şüpheli Davranışlar</h3>
+
+        <table>
+            <tr>
+                <th>Saldırı Türü</th>
+                <th>Risk</th>
+                <th>Detay</th>
+                <th>Neden</th>
+            </tr>
+
+            {% for alert in ip_result["alerts"] %}
+
+            <tr>
+                <td><strong>{{ alert["attack_type"] }}</strong></td>
+                <td>{{ alert["risk"] }}</td>
+                <td>{{ alert["detail"] }}</td>
+                <td>{{ alert["reason"] }}</td>
+            </tr>
+
+            {% endfor %}
+        </table>
+
+        {% endif %}
+
+        {% endif %}
+    </div>
 
     {% endif %}
+
+    <div class="two-columns">
+
+        <div class="panel">
+            <h2>En Aktif Kaynak IP Adresleri</h2>
+
+            <table>
+                <tr>
+                    <th>IP Adresi</th>
+                    <th>İstek Sayısı</th>
+                </tr>
+
+                {% for ip, count in top_ips %}
+                <tr>
+                    <td>{{ ip }}</td>
+                    <td>{{ count }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <div class="panel">
+            <h2>HTTP Durum Kodları</h2>
+
+            <table>
+                <tr>
+                    <th>Durum Kodu</th>
+                    <th>Adet</th>
+                </tr>
+
+                {% for code, count in status_counts.items() %}
+                <tr>
+                    <td>{{ code }}</td>
+                    <td>{{ count }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+    </div>
+
+    <div class="panel">
+        <h2>Güvenlik Alarmları</h2>
+
+        {% if alerts %}
+
+        <table>
+            <tr>
+                <th>Kaynak IP</th>
+                <th>Saldırı Türü</th>
+                <th>Risk</th>
+                <th>Durum</th>
+                <th>Detay</th>
+                <th>Neden</th>
+            </tr>
+
+            {% for alert in alerts %}
+            <tr>
+                <td><strong>{{ alert["ip"] }}</strong></td>
+                <td>{{ alert["attack_type"] }}</td>
+                <td>{{ alert["risk"] }}</td>
+                <td>{{ alert["status"] }}</td>
+                <td>{{ alert["detail"] }}</td>
+                <td>{{ alert["reason"] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        {% else %}
+
+        <div class="empty">
+            Bu log dosyasında herhangi bir güvenlik alarmı tespit edilmedi.
+        </div>
+
+        {% endif %}
+    </div>
 
 </div>
 
