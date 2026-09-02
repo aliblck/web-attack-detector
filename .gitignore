@@ -3,3 +3,12 @@ __pycache__/
 .venv/
 venv/
 .env
+# Canlı log çıktısı
+sample_logs/live_access.log
+
+# Dashboard üzerinden yüklenen geçici log dosyaları
+uploads/
+
+# Python cache dosyaları
+__pycache__/
+*.pyc
