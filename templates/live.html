@@ -73,7 +73,7 @@
             background: white;
             padding: 10px 14px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
         }
 
         .stats {
@@ -87,7 +87,7 @@
             background: white;
             padding: 22px;
             border-radius: 14px;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.07);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
         }
 
         .stat-card p {
@@ -122,7 +122,7 @@
             border-radius: 14px;
             padding: 24px;
             margin-bottom: 22px;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.07);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
         }
 
         .panel h2 {
@@ -154,6 +154,16 @@
 
         tr:hover {
             background: #f8fafc;
+        }
+
+        /* Canlı log satırının tıklanabilir olduğunu gösterir */
+        .clickable-row {
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .clickable-row:hover {
+            background: #eaf2ff;
         }
 
         .status-code {
@@ -236,13 +246,14 @@
             }
         }
     </style>
-
 </head>
 
 <body>
 
 <div class="header">
+
     <h1>CANLI WEB LOG İZLEME</h1>
+
     <p>
         Metasploitable Apache access.log kayıtlarının gerçek zamanlı güvenlik analizi
     </p>
@@ -250,6 +261,7 @@
     <p>
         <a href="/">← Genel Güvenlik Paneline Dön</a>
     </p>
+
 </div>
 
 
@@ -301,8 +313,8 @@
         <h2>Son HTTP İstekleri</h2>
 
         <p class="description">
-            Bu bölüm Metasploitable Apache sunucusundan alınan son 30 HTTP isteğini göstermektedir.
-            Sayfa 3 saniyede bir otomatik olarak yenilenir.
+            Son 30 canlı HTTP isteği gösterilmektedir.
+            Bir kaydın ayrıntılarını incelemek için satırın üzerine tıklayabilirsiniz.
         </p>
 
         {% if latest_logs %}
@@ -318,44 +330,48 @@
                 <th>User-Agent</th>
             </tr>
 
-            {% for log in latest_logs|reverse %}
+            {% for item in latest_logs|reverse %}
 
-            <tr>
+            <tr
+                class="clickable-row"
+                onclick="window.location.href='/live/detail/{{ item.index }}'"
+                title="Log ayrıntılarını görüntülemek için tıklayın"
+            >
 
                 <td>
-                    {{ log["timestamp"] }}
+                    {{ item.log["timestamp"] }}
                 </td>
 
                 <td>
-                    <strong>{{ log["ip"] }}</strong>
+                    <strong>{{ item.log["ip"] }}</strong>
                 </td>
 
                 <td>
-                    {{ log["method"] }}
+                    {{ item.log["method"] }}
                 </td>
 
                 <td>
-                    {{ log["url"] }}
+                    {{ item.log["url"] }}
                 </td>
 
                 <td>
 
-                    {% if log["status"] in [401, 403, 404] %}
+                    {% if item.log["status"] in [401, 403, 404] %}
 
                     <span class="status-code status-danger">
-                        {{ log["status"] }}
+                        {{ item.log["status"] }}
                     </span>
 
-                    {% elif log["status"] >= 500 %}
+                    {% elif item.log["status"] >= 500 %}
 
                     <span class="status-code status-warning">
-                        {{ log["status"] }}
+                        {{ item.log["status"] }}
                     </span>
 
                     {% else %}
 
                     <span class="status-code status-normal">
-                        {{ log["status"] }}
+                        {{ item.log["status"] }}
                     </span>
 
                     {% endif %}
@@ -363,7 +379,7 @@
                 </td>
 
                 <td>
-                    {{ log["user_agent"] }}
+                    {{ item.log["user_agent"] }}
                 </td>
 
             </tr>
@@ -383,13 +399,13 @@
     </div>
 
 
-    <!-- CANLI GÜVENLİK ALARMLARI -->
+    <!-- AKTİF GÜVENLİK ALARMLARI -->
     <div class="panel">
 
         <h2>Aktif Güvenlik Alarmları</h2>
 
         <p class="description">
-            Canlı log kayıtları mevcut detection kuralları kullanılarak analiz edilmektedir.
+            Canlı log kayıtları mevcut saldırı tespit kuralları kullanılarak analiz edilmektedir.
         </p>
 
         {% if alerts %}
@@ -486,4 +502,5 @@
 </div>
 
 </body>
+
 </html>

@@ -319,19 +319,24 @@ def analyze_ip_route():
 @app.route("/live")
 def live_monitor():
 
-    # ÖNEMLİ:
-    # Burada artık seçilmiş statik log değil,
-    # live_reader.py tarafından oluşturulan
-    # canlı log dosyası okunmaktadır.
+    # Canlı log dosyasını okur
     parsed_logs = load_logs(LIVE_LOG_FILE)
 
-    # En son gelen 30 HTTP isteğini gösterir
-    latest_logs = parsed_logs[-30:]
+    # Son 30 kaydı seçer ve gerçek indekslerini saklar
+    start_index = max(0, len(parsed_logs) - 30)
 
-    # Canlı log üzerinde saldırı tespit kurallarını çalıştırır
+    latest_logs = [
+        {
+            "index": index,
+            "log": parsed_logs[index]
+        }
+        for index in range(start_index, len(parsed_logs))
+    ]
+
+    # Canlı loglar üzerinde saldırı tespiti yapar
     all_alerts = detect_all(parsed_logs)
 
-    # Alarm oluşturan benzersiz IP adreslerini hesaplar
+    # Şüpheli IP adreslerini belirler
     suspicious_ips = set()
 
     for alert in all_alerts:
@@ -340,23 +345,66 @@ def live_monitor():
     # Canlı log istatistiklerini hesaplar
     live_results = analyze_logs(parsed_logs)
 
+    # Sonuçları live.html sayfasına gönderir
     return render_template(
         "live.html",
-
-        # Canlı son HTTP istekleri
         latest_logs=latest_logs,
-
-        # Canlı güvenlik alarmları
         alerts=all_alerts,
-
-        # Canlı log dosyasının adı
         selected_file="live_access.log",
-
-        # Üst kartlarda kullanılacak canlı istatistikler
         total_requests=live_results["total_requests"],
         unique_ips=live_results["unique_ip_count"],
         suspicious_ip_count=len(suspicious_ips),
         alert_count=len(all_alerts),
+    )
+# ------------------------------------------------------------
+# CANLI LOG DETAY İNCELEME
+# ------------------------------------------------------------
+
+@app.route("/live/detail/<int:index>")
+def live_log_detail(index):
+
+    # Canlı log dosyasını okur
+    parsed_logs = load_logs(LIVE_LOG_FILE)
+
+    # Geçerli bir kayıt numarası mı kontrol eder
+    if index < 0 or index >= len(parsed_logs):
+        return "Log kaydı bulunamadı.", 404
+
+    # Seçilen log kaydını alır
+    selected_log = parsed_logs[index]
+
+    # Aynı IP adresine ait tüm canlı log kayıtlarını seçer
+    ip_logs = [
+        log for log in parsed_logs
+        if log["ip"] == selected_log["ip"]
+    ]
+
+    # Bu IP adresi için tüm detection kurallarını çalıştırır
+    related_alerts = detect_all(ip_logs)
+
+    # Varsayılan değerlendirme
+    suspicious = False
+    risk = "DÜŞÜK"
+
+    # Eğer bu IP için alarm varsa şüpheli kabul edilir
+    if related_alerts:
+        suspicious = True
+        risk = "ORTA"
+
+        # Herhangi bir yüksek riskli alarm varsa
+        # genel risk seviyesi YÜKSEK olur
+        if any(
+            alert.get("risk") == "YÜKSEK"
+            for alert in related_alerts
+        ):
+            risk = "YÜKSEK"
+
+    return render_template(
+        "live_detail.html",
+        log=selected_log,
+        suspicious=suspicious,
+        risk=risk,
+        alerts=related_alerts,
     )
 
 
